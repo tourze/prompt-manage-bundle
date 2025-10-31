@@ -1,0 +1,278 @@
+{% extends '@EasyAdmin/layout.html.twig' %}
+
+{% block title %}提示词测试 - {{ prompt_name }}{% endblock %}
+
+{% block page_title %}🧪 提示词测试 - {{ prompt_name }} (v{{ version }}){% endblock %}
+
+{% block main %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- 左侧：模板和参数 -->
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5>📝 模板内容</h5>
+                </div>
+                <div class="card-body">
+                    <pre class="bg-light p-3 border rounded" style="white-space: pre-wrap; max-height: 200px; overflow-y: auto;">{{ template }}</pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5>⚙️ 参数设置</h5>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="clearParameters">
+                        🗑️ 清空参数
+                    </button>
+                </div>
+                <div class="card-body">
+                    <form id="testForm" method="post" action="{{ path('prompt_test_execute', {promptId: prompt_id, version: version}) }}">
+                        {% if parameters is empty %}
+                            <div class="alert alert-info">
+                                🎉 此模板无需参数，可直接执行测试
+                            </div>
+                        {% else %}
+                            <div id="parametersContainer">
+                                {% for param_name, param_info in parameters %}
+                                    <div class="mb-3">
+                                        <label for="param_{{ param_name }}" class="form-label">
+                                            {{ param_name }}
+                                            {% if param_info.required|default(true) %}
+                                                <span class="text-danger">*</span>
+                                            {% endif %}
+                                        </label>
+                                        {% if param_info.type|default('string') == 'textarea' %}
+                                            <textarea
+                                                class="form-control"
+                                                id="param_{{ param_name }}"
+                                                name="parameters[{{ param_name }}]"
+                                                rows="3"
+                                                {% if param_info.required|default(true) %}required{% endif %}
+                                            >{{ parameter_values[param_name]|default('') }}</textarea>
+                                        {% else %}
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                id="param_{{ param_name }}"
+                                                name="parameters[{{ param_name }}]"
+                                                value="{{ parameter_values[param_name]|default('') }}"
+                                                {% if param_info.required|default(true) %}required{% endif %}
+                                            />
+                                        {% endif %}
+                                        {% if param_info.description|default('') %}
+                                            <small class="form-text text-muted">{{ param_info.description }}</small>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-3">
+                            <button type="submit" class="btn btn-primary" id="executeButton">
+                                <span id="buttonText">🚀 执行测试</span>
+                                <span id="buttonSpinner" class="spinner-border spinner-border-sm ms-2" style="display: none;"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：测试结果 -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>📊 测试结果</h5>
+                </div>
+                <div class="card-body">
+                    <div id="resultContainer">
+                        {% if test_result is defined %}
+                            {% if test_result.success %}
+                                <div class="alert alert-success">
+                                    <h6>✅ 测试成功</h6>
+                                    {% if test_result.metadata.parameter_warnings|default([]) is not empty %}
+                                        <div class="mt-2">
+                                            <small class="text-warning">
+                                                ⚠️ 警告: {{ test_result.metadata.parameter_warnings|join(', ') }}
+                                            </small>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="mt-3">
+                                    <h6>渲染结果：</h6>
+                                    <div class="border rounded p-3 bg-light" style="white-space: pre-wrap; max-height: 400px; overflow-y: auto;">{{ test_result.content }}</div>
+                                </div>
+                                {% if test_result.metadata %}
+                                    <details class="mt-3">
+                                        <summary class="btn btn-outline-info btn-sm">🔍 元数据</summary>
+                                        <pre class="mt-2 bg-light p-2 border rounded small">{{ test_result.metadata|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+                                    </details>
+                                {% endif %}
+                            {% else %}
+                                <div class="alert alert-danger">
+                                    <h6>❌ 测试失败</h6>
+                                    <p><strong>错误信息：</strong>{{ test_result.error|default('未知错误') }}</p>
+                                    {% if test_result.content %}
+                                        <details class="mt-2">
+                                            <summary>查看部分渲染内容</summary>
+                                            <pre class="mt-2 bg-light p-2 border rounded">{{ test_result.content }}</pre>
+                                        </details>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="text-center text-muted py-5" id="initialState">
+                                <i class="fa fa-flask fa-3x mb-3"></i>
+                                <p>点击"执行测试"按钮开始测试</p>
+                                <small>系统将使用您提供的参数渲染模板</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 返回按钮 -->
+    <div class="row mt-3">
+        <div class="col-12">
+            <a href="{{ path('admin') }}" class="btn btn-outline-secondary">
+                ← 返回管理面板
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .test-page-state-loading {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+    .test-page-state-success .alert-success {
+        animation: fadeIn 0.5s ease-in;
+    }
+
+    .test-page-state-error .alert-danger {
+        animation: shake 0.5s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+</style>
+
+<script>
+/**
+ * 提示词测试页面 JavaScript
+ * Linus: "简单胜于复杂" - 只有5个状态，可预测
+ */
+(function() {
+    'use strict';
+
+    // 状态定义（FRD要求的5个状态）
+    const TestPageState = {
+        INITIAL: 'initial',
+        LOADING: 'loading',
+        SUCCESS: 'success',
+        ERROR: 'error',
+        CLEARED: 'cleared'
+    };
+
+    let currentState = TestPageState.INITIAL;
+
+    // DOM 元素
+    const form = document.getElementById('testForm');
+    const executeButton = document.getElementById('executeButton');
+    const buttonText = document.getElementById('buttonText');
+    const buttonSpinner = document.getElementById('buttonSpinner');
+    const clearButton = document.getElementById('clearParameters');
+    const resultContainer = document.getElementById('resultContainer');
+    const initialState = document.getElementById('initialState');
+
+    // 状态管理
+    function setState(newState) {
+        // 清除之前的状态类
+        document.body.classList.remove(`test-page-state-${currentState}`);
+
+        currentState = newState;
+
+        // 添加新状态类
+        document.body.classList.add(`test-page-state-${currentState}`);
+
+        // 根据状态更新UI
+        switch (newState) {
+            case TestPageState.LOADING:
+                executeButton.disabled = true;
+                buttonText.textContent = '⏳ 执行中...';
+                buttonSpinner.style.display = 'inline-block';
+                break;
+
+            case TestPageState.SUCCESS:
+            case TestPageState.ERROR:
+                executeButton.disabled = false;
+                buttonText.textContent = '🚀 执行测试';
+                buttonSpinner.style.display = 'none';
+                break;
+
+            case TestPageState.CLEARED:
+            case TestPageState.INITIAL:
+                executeButton.disabled = false;
+                buttonText.textContent = '🚀 执行测试';
+                buttonSpinner.style.display = 'none';
+                break;
+        }
+    }
+
+    // 表单提交处理
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            setState(TestPageState.LOADING);
+        });
+    }
+
+    // 清空参数按钮
+    if (clearButton) {
+        clearButton.addEventListener('click', function() {
+            const inputs = form.querySelectorAll('input[type="text"], textarea');
+            inputs.forEach(input => input.value = '');
+            setState(TestPageState.CLEARED);
+
+            // 如果有初始状态提示，显示它
+            if (initialState) {
+                resultContainer.innerHTML = initialState.outerHTML;
+            }
+        });
+    }
+
+    // 检测当前页面状态
+    {% if test_result is defined %}
+        {% if test_result.success %}
+            setState(TestPageState.SUCCESS);
+        {% else %}
+            setState(TestPageState.ERROR);
+        {% endif %}
+    {% else %}
+        setState(TestPageState.INITIAL);
+    {% endif %}
+
+    // 实时参数验证（可选增强）
+    const paramInputs = form?.querySelectorAll('input[required], textarea[required]');
+    if (paramInputs) {
+        paramInputs.forEach(input => {
+            input.addEventListener('input', function() {
+                this.classList.toggle('is-valid', this.value.trim() !== '');
+                this.classList.toggle('is-invalid', this.value.trim() === '');
+            });
+        });
+    }
+})();
+</script>
+{% endblock %}

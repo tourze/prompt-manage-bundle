@@ -1,0 +1,19 @@
+services:
+  # default configuration for services in *this* file
+  _defaults:
+    autowire: true      # Automatically injects dependencies in your services.
+    autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+    public: false
+
+  # Auto-register services
+  Tourze\PromptManageBundle\Service\:
+    resource: '../../Service/'
+
+  Tourze\PromptManageBundle\Controller\:
+    resource: '../../Controller/'
+    tags: ['controller.service_arguments']
+
+  Tourze\PromptManageBundle\Repository\:
+    resource: '../../Repository/'
+
+  # AdminMenu service will be auto-configured with the AutoconfigureTag attribute

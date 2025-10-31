@@ -1,1 +1,0 @@
-# prompt-manage-bundle
