@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use InvalidArgumentException;
 use Symfony\Component\Validator\Constraints as Assert;
 use Tourze\DoctrineTimestampBundle\Traits\TimestampableAware;
 use Tourze\DoctrineUserBundle\Traits\CreatedByAware;
@@ -55,6 +56,10 @@ class Prompt implements \Stringable
         inverseJoinColumns: [new ORM\JoinColumn(name: 'tag_id', referencedColumnName: 'id')]
     )]
     private Collection $tags;
+
+    #[ORM\Column(length: 30, options: [' comment' => '可见性策略', 'default' =>'private'])]
+    #[Assert\Choice(['public', 'private'])]
+    private string $visibility = 'private';
 
     public function __construct()
     {
@@ -145,6 +150,20 @@ class Prompt implements \Stringable
     public function removeTag(Tag $tag): void
     {
         $this->tags->removeElement($tag);
+    }
+
+    public function getVisibility(): string
+    {
+        return $this->visibility;
+    }
+
+    public function setVisibility(string $visibility): void
+    {
+        if (!in_array($visibility, ['public', 'private'], true)) {
+            throw new InvalidArgumentException(sprintf('不支持的可见性: %s', $visibility));
+        }
+
+        $this->visibility = $visibility;
     }
 
     /**

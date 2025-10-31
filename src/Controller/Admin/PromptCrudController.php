@@ -16,6 +16,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
 use EasyCorp\Bundle\EasyAdminBundle\Contracts\Field\FieldInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
@@ -142,6 +143,16 @@ final class PromptCrudController extends AbstractCrudController
             ->setRequired(false)
             ->autocomplete()
             ->setHelp('为提示词添加标签，支持多选')
+        ;
+
+        yield ChoiceField::new('visibility', '可见性')
+            ->setChoices([
+                '所有人可访问' => 'public',
+                '仅自己可见' => 'private',
+            ])
+            ->renderExpanded(false)
+            ->renderAsBadges()
+            ->setRequired(true)
         ;
     }
 
