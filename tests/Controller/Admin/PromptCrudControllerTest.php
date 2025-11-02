@@ -37,6 +37,7 @@ final class PromptCrudControllerTest extends AbstractEasyAdminControllerTestCase
         yield '名称' => ['名称'];
         yield '项目' => ['项目'];
         yield '标签' => ['标签'];
+        yield '可见性' => ['可见性'];
         yield '当前版本' => ['当前版本'];
         yield '内容预览' => ['内容预览'];
         yield '创建时间' => ['创建时间'];

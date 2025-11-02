@@ -113,10 +113,7 @@ final class PromptVersionCrudControllerTest extends AbstractEasyAdminControllerT
 
     public function testIndexPageWithAuthentication(): void
     {
-        $client = self::createClientWithDatabase();
-
-        $admin = $this->createAdminUser('admin@test.com', 'password');
-        $this->loginAsAdmin($client, 'admin@test.com', 'password');
+        $client = self::createAuthenticatedClient();
 
         $url = $this->generateAdminUrl('index');
         $client->request('GET', $url);
@@ -131,10 +128,7 @@ final class PromptVersionCrudControllerTest extends AbstractEasyAdminControllerT
 
     public function testNewPageWithAuthentication(): void
     {
-        $client = self::createClientWithDatabase();
-
-        $admin = $this->createAdminUser('admin@test.com', 'password');
-        $this->loginAsAdmin($client, 'admin@test.com', 'password');
+        $client = self::createAuthenticatedClient();
 
         $url = $this->generateAdminUrl('new');
         $client->catchExceptions(false);
@@ -160,10 +154,7 @@ final class PromptVersionCrudControllerTest extends AbstractEasyAdminControllerT
 
     public function testDetailPageWithAuthentication(): void
     {
-        $client = self::createClientWithDatabase();
-
-        $admin = $this->createAdminUser('admin@test.com', 'password');
-        $this->loginAsAdmin($client, 'admin@test.com', 'password');
+        $client = self::createAuthenticatedClient();
 
         // 由于没有测试数据，跳过详情页面测试
         self::markTestSkipped('Skipping detail page test - no test data available');
@@ -171,10 +162,7 @@ final class PromptVersionCrudControllerTest extends AbstractEasyAdminControllerT
 
     public function testTestActionWithAuthentication(): void
     {
-        $client = self::createClientWithDatabase();
-
-        $admin = $this->createAdminUser('admin@test.com', 'password');
-        $this->loginAsAdmin($client, 'admin@test.com', 'password');
+        $client = self::createAuthenticatedClient();
 
         // 由于没有测试数据，跳过testVersion动作测试
         self::markTestSkipped('Skipping testVersion action test - no test data available');
@@ -399,7 +387,7 @@ final class PromptVersionCrudControllerTest extends AbstractEasyAdminControllerT
         }
 
         // 测试管理员登录后的访问
-        $this->loginAsAdmin($client, 'admin@test.com', 'password');
+        $client = self::createAuthenticatedClient();
         $client->request('GET', $url);
         $response = $client->getResponse();
 

@@ -57,8 +57,8 @@ class Prompt implements \Stringable
     )]
     private Collection $tags;
 
-    #[ORM\Column(length: 30, options: [' comment' => '可见性策略', 'default' =>'private'])]
-    #[Assert\Choice(['public', 'private'])]
+    #[ORM\Column(length: 30, options: ['comment' => '可见性策略', 'default' => 'private'])]
+    #[Assert\Choice(choices: ['public', 'private'])]
     private string $visibility = 'private';
 
     public function __construct()
