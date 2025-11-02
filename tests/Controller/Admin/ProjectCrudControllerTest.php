@@ -10,6 +10,11 @@ use EasyCorp\Bundle\EasyAdminBundle\Config\Filters;
 use EasyCorp\Bundle\EasyAdminBundle\Exception\EntityNotFoundException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
+use Symfony\Component\DomCrawler\Crawler;
+use Symfony\Component\DomCrawler\Form;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Tourze\PHPUnitSymfonyWebTest\AbstractEasyAdminControllerTestCase;
 use Tourze\PromptManageBundle\Controller\Admin\ProjectCrudController;
@@ -148,7 +153,7 @@ final class ProjectCrudControllerTest extends AbstractEasyAdminControllerTestCas
 
         // 删除操作应该是非GET方法，这里期望抛出 MethodNotAllowedHttpException
         $client->catchExceptions(false);
-        $this->expectException(\Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException::class);
+        $this->expectException(MethodNotAllowedHttpException::class);
         $client->request('GET', $this->generateAdminUrl('delete', ['entityId' => 999]));
     }
 
@@ -173,48 +178,82 @@ final class ProjectCrudControllerTest extends AbstractEasyAdminControllerTestCas
     public function testValidationErrors(): void
     {
         $client = self::createAuthenticatedClient();
+        $crawler = $this->getNewFormCrawler($client);
+        $form = $this->findSubmitForm($crawler);
+        $responseCrawler = $this->submitEmptyForm($client, $form);
+        $this->assertValidationResponse($client, $responseCrawler);
 
-        // 获取新建表单
+        // 确保验证流程执行完成
+        $response = $client->getResponse();
+        self::assertInstanceOf(Response::class, $response, 'Form submission should return a valid response');
+    }
+
+    private function getNewFormCrawler(KernelBrowser $client): Crawler
+    {
         $crawler = $client->request('GET', $this->generateAdminUrl('new'));
 
         if ($client->getResponse()->isNotFound()) {
             self::markTestSkipped('Route not found in test environment');
         }
 
-        // 查找表单并提交空数据 - 尝试不同的按钮选择器
+        return $crawler;
+    }
+
+    private function findSubmitForm(Crawler $crawler): Form
+    {
         $formButtons = $crawler->filter('button[type="submit"], input[type="submit"]');
         if (0 === $formButtons->count()) {
             self::markTestSkipped('No submit button found in form');
         }
 
-        $form = $formButtons->form();
+        return $formButtons->form();
+    }
 
+    private function submitEmptyForm(KernelBrowser $client, Form $form): Crawler
+    {
         try {
-            $crawler = $client->submit($form);
+            return $client->submit($form);
         } catch (\Throwable $e) {
             // 某些环境下，空表单会触发属性访问器将 null 赋值给 string 类型属性，导致类型异常
             // 这里不强行断言422，直接跳过后续针对HTML的验证，避免无关失败
             self::markTestSkipped('空表单提交触发类型异常，跳过基于HTML的校验：' . $e->getMessage());
         }
+    }
 
-        // 验证响应包含验证错误
+    private function assertValidationResponse(KernelBrowser $client, Crawler $crawler): void
+    {
         $response = $client->getResponse();
         if (422 === $response->getStatusCode()) {
-            $invalidFeedback = $crawler->filter('.invalid-feedback, .form-error-message, .alert-danger');
-            if ($invalidFeedback->count() > 0) {
-                self::assertStringContainsString('should not be blank', $invalidFeedback->text());
-            } else {
-                // 验证错误可能以其他形式出现
-                $content = $response->getContent();
-                self::assertStringContainsString('error', strtolower(false !== $content ? $content : ''));
-            }
+            $this->assertValidationErrorsInResponse($crawler);
         } else {
-            // 如果不是422，可能是重定向或其他状态，这在测试环境中是正常的
-            $this->assertTrue(
-                $response->isRedirection() || $response->isSuccessful(),
-                'Expected validation error, redirect, or success'
-            );
+            $this->assertAlternativeResponse($response);
         }
+    }
+
+    private function assertValidationErrorsInResponse(Crawler $crawler): void
+    {
+        $invalidFeedback = $crawler->filter('.invalid-feedback, .form-error-message, .alert-danger');
+        if ($invalidFeedback->count() > 0) {
+            self::assertStringContainsString('should not be blank', $invalidFeedback->text());
+        } else {
+            $this->assertErrorInResponseContent($crawler);
+        }
+    }
+
+    private function assertErrorInResponseContent(Crawler $crawler): void
+    {
+        $content = $crawler->getNode(0)?->ownerDocument?->saveHTML();
+        $contentString = is_string($content) ? $content : '';
+        self::assertStringContainsString('error', strtolower($contentString));
+    }
+
+    private function assertAlternativeResponse(Response $response): void
+    {
+        // 如果不是422，可能是重定向或其他状态，这在测试环境中是正常的
+        $this->assertTrue(
+            $response->isRedirection() || $response->isSuccessful(),
+            'Expected validation error, redirect, or success'
+        );
     }
 
     public function testProjectEntityGetPromptCount(): void

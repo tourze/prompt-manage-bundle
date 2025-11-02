@@ -251,7 +251,7 @@ class PromptService implements PromptServiceInterface
 
         // 移除双大括号内容，然后匹配单大括号语法 {variable}
         $contentWithoutDouble = preg_replace('/\{\{[^}]+\}\}/', '', $content);
-        if ($contentWithoutDouble !== null) {
+        if (null !== $contentWithoutDouble) {
             preg_match_all('/\{([^}]+)\}/', $contentWithoutDouble, $singleMatches);
             if (\count($singleMatches[1]) > 0) {
                 $placeholders = array_merge($placeholders, $singleMatches[1]);

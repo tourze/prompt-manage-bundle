@@ -160,7 +160,7 @@ class Prompt implements \Stringable
     public function setVisibility(string $visibility): void
     {
         if (!in_array($visibility, ['public', 'private'], true)) {
-            throw new InvalidArgumentException(sprintf('不支持的可见性: %s', $visibility));
+            throw new \InvalidArgumentException(sprintf('不支持的可见性: %s', $visibility));
         }
 
         $this->visibility = $visibility;

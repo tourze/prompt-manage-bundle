@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Tourze\PromptManageBundle\Tests\Controller\Admin;
 
+use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Tourze\PHPUnitSymfonyWebTest\AbstractWebTestCase;
 use Tourze\PromptManageBundle\Controller\Admin\DashboardController;
 
@@ -30,10 +32,10 @@ final class DashboardControllerTest extends AbstractWebTestCase
 
             // 期望405方法不允许或404（测试环境可能没有注册路由）
             self::assertTrue(
-                $response->getStatusCode() === 405 || $response->isNotFound(),
+                405 === $response->getStatusCode() || $response->isNotFound(),
                 sprintf('Expected 405 Method Not Allowed or 404 for %s request', $method)
             );
-        } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e) {
+        } catch (NotFoundHttpException $e) {
             // 在测试环境中路由未注册，这是可以接受的
             self::assertStringContainsString('No route found', $e->getMessage());
         }
@@ -58,7 +60,7 @@ final class DashboardControllerTest extends AbstractWebTestCase
                 $location = $response->headers->get('Location');
                 self::assertNotNull($location, 'Redirect should have a location header');
             }
-        } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e) {
+        } catch (NotFoundHttpException $e) {
             // 在测试环境中路由未注册，这是可以接受的
             self::markTestSkipped('Dashboard route not registered in test environment: ' . $e->getMessage());
         }
@@ -71,7 +73,7 @@ final class DashboardControllerTest extends AbstractWebTestCase
         $dashboard = $controller->configureDashboard();
 
         // 测试Dashboard配置是否正确创建
-        self::assertInstanceOf(\EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard::class, $dashboard);
+        self::assertInstanceOf(Dashboard::class, $dashboard);
     }
 
     public function testMenuConfiguration(): void

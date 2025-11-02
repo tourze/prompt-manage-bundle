@@ -7,6 +7,7 @@ namespace Tourze\PromptManageBundle\Tests\Service;
 use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Tourze\PromptManageBundle\DTO\ParseResult;
 use Tourze\PromptManageBundle\DTO\RenderResult;
@@ -33,7 +34,7 @@ final class TestingServiceTest extends TestCase
 {
     private TestingService $testingService;
 
-    private PromptRepository&\PHPUnit\Framework\MockObject\MockObject $promptRepository;
+    private PromptRepository&MockObject $promptRepository;
 
     private TemplateEngineRegistry $engineRegistry;
 
@@ -101,7 +102,8 @@ final class TestingServiceTest extends TestCase
             ->expects($this->once())
             ->method('find')
             ->with($promptId)
-            ->willReturn(null);
+            ->willReturn(null)
+        ;
 
         $result = $this->testingService->getTestData($promptId, $version);
 
@@ -127,7 +129,8 @@ final class TestingServiceTest extends TestCase
             ->expects($this->once())
             ->method('find')
             ->with($promptId)
-            ->willReturn($prompt);
+            ->willReturn($prompt)
+        ;
 
         $result = $this->testingService->getTestData($promptId, $nonExistentVersion);
 
@@ -231,7 +234,8 @@ final class TestingServiceTest extends TestCase
             ->expects($this->once())
             ->method('find')
             ->with($promptId)
-            ->willReturn($prompt);
+            ->willReturn($prompt)
+        ;
 
         $result = $this->testingService->getTestData($promptId, null);
 
@@ -285,7 +289,7 @@ final class TestingServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        /** @var PromptRepository&\PHPUnit\Framework\MockObject\MockObject $promptRepository */
+        /** @var PromptRepository&MockObject $promptRepository */
         $promptRepository = $this->createMock(PromptRepository::class);
         $this->promptRepository = $promptRepository;
 
