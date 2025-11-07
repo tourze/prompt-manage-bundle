@@ -500,7 +500,8 @@ final class PromptCrudController extends AbstractCrudController
                 $projectName,
                 $tagNames,
                 null,
-                $changeNote
+                $changeNote,
+                $entityInstance->getVisibility()
             );
 
             $this->addFlash('success', sprintf('提示词 "%s" 创建成功，初始版本为 v1', $createdPrompt->getName()));

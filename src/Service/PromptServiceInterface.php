@@ -25,6 +25,7 @@ interface PromptServiceInterface
         array $tagNames = [],
         ?string $createdBy = null,
         ?string $changeNote = null,
+        ?string $visibility = null,
     ): Prompt;
 
     /**

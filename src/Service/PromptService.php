@@ -43,6 +43,7 @@ class PromptService implements PromptServiceInterface
         array $tagNames = [],
         ?string $createdBy = null,
         ?string $changeNote = null,
+        ?string $visibility = null,
     ): Prompt {
         try {
             $this->entityManager->beginTransaction();
@@ -57,6 +58,9 @@ class PromptService implements PromptServiceInterface
             $prompt = new Prompt();
             $prompt->setName($name);
             $prompt->setCreatedBy($createdBy);
+            if (null !== $visibility) {
+                $prompt->setVisibility($visibility);
+            }
 
             // 设置项目
             if (null !== $projectName) {
