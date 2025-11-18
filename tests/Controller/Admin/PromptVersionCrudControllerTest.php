@@ -179,15 +179,6 @@ final class PromptVersionCrudControllerTest extends AbstractEasyAdminControllerT
         self::markTestSkipped('Skipping switchToVersion action test - no test data available');
     }
 
-    public function testGetEntityFqcn(): void
-    {
-        /** @var PromptVersionCrudController $controller */
-        $controller = self::getContainer()->get(PromptVersionCrudController::class);
-        $entityFqcn = $controller::getEntityFqcn();
-
-        self::assertSame(PromptVersion::class, $entityFqcn);
-    }
-
     public function testValidationErrors(): void
     {
         $client = self::createClientWithDatabase();

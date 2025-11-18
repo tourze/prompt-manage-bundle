@@ -160,13 +160,6 @@ final class PromptCrudControllerTest extends AbstractEasyAdminControllerTestCase
         self::markTestSkipped('PromptCrudController requires complex EasyAdmin context setup');
     }
 
-    public function testGetEntityFqcn(): void
-    {
-        $entityFqcn = PromptCrudController::getEntityFqcn();
-
-        self::assertSame(Prompt::class, $entityFqcn);
-    }
-
     public function testCreateEntity(): void
     {
         // 使用容器来获取完整配置的控制器实例

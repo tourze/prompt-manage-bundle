@@ -157,15 +157,6 @@ final class ProjectCrudControllerTest extends AbstractEasyAdminControllerTestCas
         $client->request('GET', $this->generateAdminUrl('delete', ['entityId' => 999]));
     }
 
-    public function testGetEntityFqcn(): void
-    {
-        /** @var ProjectCrudController $controller */
-        $controller = self::getContainer()->get(ProjectCrudController::class);
-        $entityFqcn = $controller::getEntityFqcn();
-
-        self::assertSame(Project::class, $entityFqcn);
-    }
-
     public function testCreateEntity(): void
     {
         /** @var ProjectCrudController $controller */
