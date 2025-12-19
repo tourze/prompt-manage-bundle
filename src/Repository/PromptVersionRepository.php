@@ -14,7 +14,7 @@ use Tourze\PromptManageBundle\Entity\PromptVersion;
  * @extends ServiceEntityRepository<PromptVersion>
  */
 #[AsRepository(entityClass: PromptVersion::class)]
-class PromptVersionRepository extends ServiceEntityRepository
+final class PromptVersionRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {

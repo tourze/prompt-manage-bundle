@@ -13,7 +13,7 @@ use Tourze\PromptManageBundle\Entity\Project;
  * @extends ServiceEntityRepository<Project>
  */
 #[AsRepository(entityClass: Project::class)]
-class ProjectRepository extends ServiceEntityRepository
+final class ProjectRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {

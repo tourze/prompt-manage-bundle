@@ -10,7 +10,7 @@ use Tourze\PromptManageBundle\DependencyInjection\PromptManageExtension;
  * @internal
  */
 #[CoversClass(PromptManageExtension::class)]
-class PromptManageExtensionTest extends AbstractDependencyInjectionExtensionTestCase
+final class PromptManageExtensionTest extends AbstractDependencyInjectionExtensionTestCase
 {
     protected function createExtension(): PromptManageExtension
     {

@@ -218,15 +218,19 @@ final class TestingControllerTest extends AbstractWebTestCase
             // 测试不允许的HTTP方法
             $client->request($method, '/prompt-test/123/1');
 
-            // 根据路由配置，某些方法可能会返回 405 Method Not Allowed
+            // 根据路由配置，某些方法可能会返回 405 Method Not Allowed 或 404 Not Found
             $response = $client->getResponse();
             $this->assertTrue(
                 Response::HTTP_METHOD_NOT_ALLOWED === $response->getStatusCode() || $response->isNotFound() || $response->isRedirection(),
                 "Expected method not allowed, not found, or redirect for {$method} method"
             );
         } catch (\Exception $e) {
-            // 捕获可能的异常（如MethodNotAllowedHttpException）
-            $this->assertStringContainsString('Method Not Allowed', $e->getMessage());
+            // 捕获可能的异常（如MethodNotAllowedHttpException或NotFoundHttpException）
+            // 对于路由中未定义的方法，Symfony 会返回 "No route found"
+            $this->assertTrue(
+                str_contains($e->getMessage(), 'Method Not Allowed') || str_contains($e->getMessage(), 'No route found'),
+                "Expected 'Method Not Allowed' or 'No route found' for {$method} method, got: " . $e->getMessage()
+            );
         }
     }
 }

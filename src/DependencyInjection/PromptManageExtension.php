@@ -4,7 +4,7 @@ namespace Tourze\PromptManageBundle\DependencyInjection;
 
 use Tourze\SymfonyDependencyServiceLoader\AutoExtension;
 
-class PromptManageExtension extends AutoExtension
+final class PromptManageExtension extends AutoExtension
 {
     protected function getConfigDir(): string
     {

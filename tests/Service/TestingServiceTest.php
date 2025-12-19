@@ -4,24 +4,13 @@ declare(strict_types=1);
 
 namespace Tourze\PromptManageBundle\Tests\Service;
 
-use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
-use Tourze\PromptManageBundle\DTO\ParseResult;
-use Tourze\PromptManageBundle\DTO\RenderResult;
-use Tourze\PromptManageBundle\DTO\ValidationResult;
+use Tourze\PHPUnitSymfonyKernelTest\AbstractIntegrationTestCase;
 use Tourze\PromptManageBundle\Entity\Prompt;
 use Tourze\PromptManageBundle\Entity\PromptVersion;
-use Tourze\PromptManageBundle\Repository\PromptRepository;
-use Tourze\PromptManageBundle\Service\FallbackTemplateEngine;
-use Tourze\PromptManageBundle\Service\ParameterSandbox;
-use Tourze\PromptManageBundle\Service\TemplateEngineInterface;
-use Tourze\PromptManageBundle\Service\TemplateEngineRegistry;
-use Tourze\PromptManageBundle\Service\TemplateRenderingCircuitBreaker;
 use Tourze\PromptManageBundle\Service\TestingService;
-use Tourze\PromptManageBundle\Service\TimeoutGuard;
 
 /**
  * T24: 业务服务集成测试 - TestingService复杂场景
@@ -30,19 +19,10 @@ use Tourze\PromptManageBundle\Service\TimeoutGuard;
  * @internal
  */
 #[CoversClass(TestingService::class)]
-final class TestingServiceTest extends TestCase
+#[RunTestsInSeparateProcesses]
+final class TestingServiceTest extends AbstractIntegrationTestCase
 {
     private TestingService $testingService;
-
-    private PromptRepository&MockObject $promptRepository;
-
-    private TemplateEngineRegistry $engineRegistry;
-
-    private ParameterSandbox $parameterSandbox;
-
-    private TimeoutGuard $timeoutGuard;
-
-    private TemplateRenderingCircuitBreaker $circuitBreaker;
 
     /**
      * 测试完整的成功测试流程
@@ -65,29 +45,6 @@ final class TestingServiceTest extends TestCase
         $this->assertIsString($result['content']);
     }
 
-    private function createMockPrompt(int $id, string $content, int $currentVersion = 1): Prompt
-    {
-        $prompt = $this->createMock(Prompt::class);
-        $prompt->method('getId')->willReturn($id);
-        $prompt->method('getName')->willReturn("Test Prompt {$id}");
-        $prompt->method('getCurrentVersion')->willReturn($currentVersion);
-
-        $version = $this->createMockPromptVersion($currentVersion, $content);
-        $prompt->method('getVersions')->willReturn(new ArrayCollection([$version]));
-
-        return $prompt;
-    }
-
-    private function createMockPromptVersion(int $version, string $content): PromptVersion
-    {
-        $promptVersion = $this->createMock(PromptVersion::class);
-        $promptVersion->method('getVersion')->willReturn($version);
-        $promptVersion->method('getContent')->willReturn($content);
-        $promptVersion->method('getChangeNote')->willReturn('Test change note');
-
-        return $promptVersion;
-    }
-
     /**
      * 测试提示词不存在的错误处理
      */
@@ -96,15 +53,8 @@ final class TestingServiceTest extends TestCase
     {
         $promptId = 999;
         $version = 1;
-        $parameters = [];
 
-        $this->promptRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($promptId)
-            ->willReturn(null)
-        ;
-
+        // 直接调用不存在的ID
         $result = $this->testingService->getTestData($promptId, $version);
 
         $this->assertArrayHasKey('error', $result);
@@ -119,20 +69,22 @@ final class TestingServiceTest extends TestCase
     #[Test]
     public function versionNotFoundErrorHandling(): void
     {
-        $promptId = 123;
-        $nonExistentVersion = 99;
-        $parameters = [];
+        // 创建真实的 Prompt，但不添加指定版本
+        $prompt = new Prompt();
+        $prompt->setName('Test Prompt');
+        $prompt->setCurrentVersion(1);
 
-        $prompt = $this->createMockPrompt($promptId, 'Test template');
+        // 添加版本1
+        $version = new PromptVersion();
+        $version->setVersion(1);
+        $version->setContent('Test content');
+        $version->setChangeNote('Initial version');
+        $prompt->addVersion($version);
 
-        $this->promptRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($promptId)
-            ->willReturn($prompt)
-        ;
+        $this->persistAndFlush($prompt);
 
-        $result = $this->testingService->getTestData($promptId, $nonExistentVersion);
+        // 请求不存在的版本99
+        $result = $this->testingService->getTestData($prompt->getId(), 99);
 
         $this->assertArrayHasKey('error', $result);
         $this->assertIsString($result['error']);
@@ -224,22 +176,25 @@ final class TestingServiceTest extends TestCase
     #[Test]
     public function defaultVersionIsUsedWhenNull(): void
     {
-        $promptId = 123;
-        $currentVersion = 5;
+        // 创建真实的 Prompt 和 PromptVersion
+        $prompt = new Prompt();
+        $prompt->setName('Test Prompt');
+        $prompt->setCurrentVersion(5);
 
-        $prompt = $this->createMockPrompt($promptId, 'Test content', $currentVersion);
-        $promptVersion = $this->createMockPromptVersion($currentVersion, 'Test content');
+        // 创建版本5
+        $version5 = new PromptVersion();
+        $version5->setVersion(5);
+        $version5->setContent('Test content v5');
+        $version5->setChangeNote('Version 5');
+        $prompt->addVersion($version5);
 
-        $this->promptRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($promptId)
-            ->willReturn($prompt)
-        ;
+        $this->persistAndFlush($prompt);
 
-        $result = $this->testingService->getTestData($promptId, null);
+        // 调用 getTestData 时传入 null 作为版本号
+        $result = $this->testingService->getTestData($prompt->getId(), null);
 
-        $this->assertSame($currentVersion, $result['version']);
+        // 应该使用当前版本
+        $this->assertSame(5, $result['version']);
     }
 
     /**
@@ -287,25 +242,8 @@ final class TestingServiceTest extends TestCase
         $this->assertNotEmpty($result);
     }
 
-    protected function setUp(): void
+    protected function onSetUp(): void
     {
-        /** @var PromptRepository&MockObject $promptRepository */
-        $promptRepository = $this->createMock(PromptRepository::class);
-        $this->promptRepository = $promptRepository;
-
-        // 使用真实对象替代Mock（因为是final类）
-        $fallbackEngine = new FallbackTemplateEngine();
-        $this->engineRegistry = new TemplateEngineRegistry($fallbackEngine);
-        $this->parameterSandbox = new ParameterSandbox();
-        $this->timeoutGuard = new TimeoutGuard(5000);
-        $this->circuitBreaker = new TemplateRenderingCircuitBreaker();
-
-        $this->testingService = new TestingService(
-            $this->promptRepository,
-            $this->engineRegistry,
-            $this->parameterSandbox,
-            $this->timeoutGuard,
-            $this->circuitBreaker
-        );
+        $this->testingService = self::getService(TestingService::class);
     }
 }

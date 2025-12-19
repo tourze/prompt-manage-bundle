@@ -13,7 +13,7 @@ use Tourze\PromptManageBundle\Entity\Tag;
  * @extends ServiceEntityRepository<Tag>
  */
 #[AsRepository(entityClass: Tag::class)]
-class TagRepository extends ServiceEntityRepository
+final class TagRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {

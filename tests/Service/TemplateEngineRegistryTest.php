@@ -300,30 +300,56 @@ final class TemplateEngineRegistryTest extends TestCase
     }
 
     /**
-     * 创建模拟引擎
+     * 创建测试引擎实例
      */
     private function createMockEngine(string $name, bool $isAvailable = true): TemplateEngineInterface
     {
-        $mock = $this->createMock(TemplateEngineInterface::class);
+        return new class($name, $isAvailable) implements TemplateEngineInterface {
+            public function __construct(
+                private readonly string $name,
+                private readonly bool $isAvailable = true,
+            ) {
+            }
 
-        $mock->method('getName')->willReturn($name);
-        $mock->method('getVersion')->willReturn('1.0.0');
-        $mock->method('isAvailable')->willReturn($isAvailable);
-        $mock->method('getSupportedFeatures')->willReturn(['basic']);
-        $mock->method('getConfiguration')->willReturn(['engine' => $name]);
+            public function getName(): string
+            {
+                return $this->name;
+            }
 
-        $mock->method('parseTemplate')
-            ->willReturn(new ParseResult(true, [], []))
-        ;
+            public function getVersion(): string
+            {
+                return '1.0.0';
+            }
 
-        $mock->method('render')
-            ->willReturn(new RenderResult(true, "rendered_{$name}", []))
-        ;
+            public function parseTemplate(string $template): ParseResult
+            {
+                return new ParseResult(true, [], []);
+            }
 
-        $mock->method('validateTemplate')
-            ->willReturn(new ValidationResult(true, [], []))
-        ;
+            public function render(string $template, array $parameters): RenderResult
+            {
+                return new RenderResult(true, "rendered_{$this->name}", []);
+            }
 
-        return $mock;
+            public function validateTemplate(string $template): ValidationResult
+            {
+                return new ValidationResult(true, [], []);
+            }
+
+            public function isAvailable(): bool
+            {
+                return $this->isAvailable;
+            }
+
+            public function getSupportedFeatures(): array
+            {
+                return ['basic'];
+            }
+
+            public function getConfiguration(): array
+            {
+                return ['engine' => $this->name];
+            }
+        };
     }
 }
